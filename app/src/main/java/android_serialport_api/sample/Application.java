@@ -22,9 +22,6 @@ import java.io.File;
 import java.io.IOException;
 import java.security.InvalidParameterException;
 
-import android_serialport_api.sample.SerialPort;
-import android_serialport_api.sample.SerialPortFinder;
-
 public class Application extends android.app.Application {
 
 	public SerialPortFinder mSerialPortFinder = new SerialPortFinder();
