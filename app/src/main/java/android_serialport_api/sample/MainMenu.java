@@ -31,6 +31,7 @@ public class MainMenu extends Activity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.main);
 
+
         final Button buttonSetup = (Button)findViewById(R.id.ButtonSetup);
         buttonSetup.setOnClickListener(new View.OnClickListener() {
 			public void onClick(View v) {
