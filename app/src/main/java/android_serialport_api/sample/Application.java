@@ -17,6 +17,7 @@
 package android_serialport_api.sample;
 
 import android.content.SharedPreferences;
+import android.util.Log;
 
 import com.example.libserialport.SerialPort;
 import com.example.libserialport.SerialPortFinder;
@@ -26,6 +27,7 @@ import java.io.IOException;
 import java.security.InvalidParameterException;
 
 public class Application extends android.app.Application {
+	private static final String TAG = "Application";
 
 	public SerialPortFinder mSerialPortFinder = new SerialPortFinder();
 	private SerialPort mSerialPort = null;
@@ -42,6 +44,7 @@ public class Application extends android.app.Application {
 				throw new InvalidParameterException();
 			}
 
+			Log.i(TAG, "path: " + path + ",baudrate: " + baudrate);
 			/* Open the serial port */
 			mSerialPort = new SerialPort(new File(path), baudrate, 0);
 		}
