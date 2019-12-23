@@ -5,11 +5,14 @@ android {
     buildToolsVersion "29.0.2"
     defaultConfig {
         applicationId "android_serialport_api.sample"
-        minSdkVersion 23
+        minSdkVersion 21
         targetSdkVersion 29
         versionCode 1
         versionName "1.0"
         testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        ndk {
+            abiFilters("armeabi-v7a")
+        }
     }
     buildTypes {
         release {
@@ -17,9 +20,16 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
         }
         sourceSets {
-            main { jni.srcDirs = [] }
+            main {
+                jni.srcDirs = []
+//                jniLibs.srcDirs = ['E:\\AndroidStudio\\Demo\\Uart01\\app\\src\\main\\jniLibs']
+                jniLibs.srcDirs = ['src/main/jniLibs']
+//                jniLibs.srcDirs = []    //这样指定，表示空，运行时会报错
+            }
         }
+
     }
+
 }
 
 dependencies {

@@ -24,3 +24,5 @@ LOCAL_SRC_FILES := SerialPort.c
 LOCAL_LDLIBS    := -llog
 
 include $(BUILD_SHARED_LIBRARY)
+
+LOCAL_JNI_SHARED_LIBRARIES += libserial_port
