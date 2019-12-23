@@ -18,6 +18,9 @@ package android_serialport_api.sample;
 
 import android.content.SharedPreferences;
 
+import com.example.libserialport.SerialPort;
+import com.example.libserialport.SerialPortFinder;
+
 import java.io.File;
 import java.io.IOException;
 import java.security.InvalidParameterException;
