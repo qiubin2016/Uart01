@@ -17,6 +17,7 @@
 package android_serialport_api.sample;
 
 import android.os.Bundle;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.widget.EditText;
 import android.widget.TextView;
@@ -25,7 +26,7 @@ import android.widget.TextView.OnEditorActionListener;
 import java.io.IOException;
 
 public class ConsoleActivity extends SerialPortActivity {
-
+	private static final String TAG = "ConsoleActivity";
 	EditText mReception;
 
 	@Override
@@ -58,6 +59,12 @@ public class ConsoleActivity extends SerialPortActivity {
 
 	@Override
 	protected void onDataReceived(final byte[] buffer, final int size) {
+		int i = 0;
+
+		for (byte byteData : buffer) {
+			Log.i(TAG, "[" + i + "]: " + byteData);
+			i++;
+		}
 		runOnUiThread(new Runnable() {
 			public void run() {
 				if (mReception != null) {

@@ -21,6 +21,7 @@ import android.app.AlertDialog;
 import android.content.DialogInterface;
 import android.content.DialogInterface.OnClickListener;
 import android.os.Bundle;
+import android.util.Log;
 
 import com.example.libserialport.SerialPort;
 
@@ -30,7 +31,7 @@ import java.io.OutputStream;
 import java.security.InvalidParameterException;
 
 public abstract class SerialPortActivity extends Activity {
-
+	private static final String TAG = "SerialPortActivity";
 	protected Application mApplication;
 	protected SerialPort mSerialPort;
 	protected OutputStream mOutputStream;
@@ -48,6 +49,7 @@ public abstract class SerialPortActivity extends Activity {
 					byte[] buffer = new byte[64];
 					if (mInputStream == null) return;
 					size = mInputStream.read(buffer);
+					Log.i(TAG, "size: " + size);
 					if (size > 0) {
 						onDataReceived(buffer, size);
 					}
