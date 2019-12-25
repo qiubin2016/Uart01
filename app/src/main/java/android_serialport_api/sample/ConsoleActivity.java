@@ -19,15 +19,22 @@ package android_serialport_api.sample;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.KeyEvent;
+import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 
-import java.io.IOException;
+import com.utils.ParseRcvData;
 
-public class ConsoleActivity extends SerialPortActivity {
+import java.io.IOException;
+import java.util.Arrays;
+
+public class ConsoleActivity extends SerialPortActivity  implements ParseRcvData.CmdCallback{
 	private static final String TAG = "ConsoleActivity";
 	EditText mReception;
+	ParseRcvData mParseRcvData;
+
+
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -55,6 +62,9 @@ public class ConsoleActivity extends SerialPortActivity {
 				return false;
 			}
 		});
+
+		//新建串口数据解析类，设置回调接口
+		mParseRcvData = new ParseRcvData<Byte>(this);
 	}
 
 	@Override
@@ -65,6 +75,7 @@ public class ConsoleActivity extends SerialPortActivity {
 			Log.i(TAG, "[" + i + "]: " + byteData);
 			i++;
 		}
+		Log.i(TAG, "len: " + size + ",buffer: " + Arrays.toString(buffer));
 		runOnUiThread(new Runnable() {
 			public void run() {
 				if (mReception != null) {
@@ -72,5 +83,17 @@ public class ConsoleActivity extends SerialPortActivity {
 				}
 			}
 		});
+
+		mParseRcvData.put(buffer, size);
+	}
+
+	@Override
+	public void onReceive(Object cmd) {
+
+	}
+
+	@Override
+	public void onError(int errCode) {
+
 	}
 }
