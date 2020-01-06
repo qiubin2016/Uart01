@@ -34,6 +34,10 @@ android {
             dirs 'libs'
         }
     }
+
+    testOptions{
+        unitTests.returnDefaultValues = true
+    }
 }
 
 dependencies {
@@ -43,6 +47,7 @@ dependencies {
     androidTestImplementation 'androidx.test.ext:junit:1.1.1'
     androidTestImplementation 'androidx.test.espresso:espresso-core:3.2.0'
 
-//    api fileTree(dir: 'libs', include: '*.jar')
+    api fileTree(dir: 'libs', include: '*.jar')
     implementation (name:'libserialport-release', ext:'aar')
+
 }

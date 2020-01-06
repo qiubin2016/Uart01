@@ -17,6 +17,7 @@
 package android_serialport_api.sample;
 
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
@@ -24,12 +25,15 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 
+import com.utils.DataConversion;
+import com.utils.ErrorCode;
 import com.utils.ParseRcvData;
+import com.utils.UartReaderData;
 
 import java.io.IOException;
 import java.util.Arrays;
 
-public class ConsoleActivity extends SerialPortActivity  implements ParseRcvData.CmdCallback{
+public class ConsoleActivity extends SerialPortActivity implements ParseRcvData.CmdCallback<UartReaderData>{
 	private static final String TAG = "ConsoleActivity";
 	EditText mReception;
 	ParseRcvData mParseRcvData;
@@ -64,18 +68,13 @@ public class ConsoleActivity extends SerialPortActivity  implements ParseRcvData
 		});
 
 		//新建串口数据解析类，设置回调接口
-		mParseRcvData = new ParseRcvData<Byte>(this);
+		mParseRcvData = new ParseRcvData(this);
 	}
 
 	@Override
 	protected void onDataReceived(final byte[] buffer, final int size) {
-		int i = 0;
+		Log.i(TAG, "len: " + size + ",buffer: " + DataConversion.toHexString(buffer, size, true));
 
-		for (byte byteData : buffer) {
-			Log.i(TAG, "[" + i + "]: " + byteData);
-			i++;
-		}
-		Log.i(TAG, "len: " + size + ",buffer: " + Arrays.toString(buffer));
 		runOnUiThread(new Runnable() {
 			public void run() {
 				if (mReception != null) {
@@ -84,16 +83,41 @@ public class ConsoleActivity extends SerialPortActivity  implements ParseRcvData
 			}
 		});
 
-		mParseRcvData.put(buffer, size);
+		mParseRcvData.put(buffer, size);  //串口接收的数据，送给解析类，解析成功回调onReceive()，失败回调onError()
+	}
+
+
+	@Override
+	public void onReceive(UartReaderData cmd) {
+		Log.i(TAG, "onReceive: " + cmd.toString());
+		cmdProcess(cmd);
 	}
 
 	@Override
-	public void onReceive(Object cmd) {
-
+	public void onError(ErrorCode errCode) {
+		Log.i(TAG, "error code: " + errCode.getErrorCode());
 	}
 
-	@Override
-	public void onError(int errCode) {
+	private void cmdProcess(UartReaderData cmd) {
+		Log.i(TAG, "cmd: " + String.format("%04x", cmd.getCmd()));
+		switch (cmd.getCmd()) {
+			case 0x4100:
+			{
 
+			}
+			break;
+			case 0x4200:
+			{
+
+			}
+			break;
+			case 0x4201:
+			{
+
+			}
+			break;
+			default:
+				break;
+		}
 	}
 }
