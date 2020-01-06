@@ -73,7 +73,8 @@ public class ConsoleActivity extends SerialPortActivity implements ParseRcvData.
 
 	@Override
 	protected void onDataReceived(final byte[] buffer, final int size) {
-		Log.i(TAG, "len: " + size + ",buffer: " + DataConversion.toHexString(buffer, size, true));
+		//串口收到数据的回调函数
+//		Log.i(TAG, "len: " + size + ",buffer: " + DataConversion.toHexString(buffer, size, true));
 
 		runOnUiThread(new Runnable() {
 			public void run() {
@@ -89,6 +90,7 @@ public class ConsoleActivity extends SerialPortActivity implements ParseRcvData.
 
 	@Override
 	public void onReceive(UartReaderData cmd) {
+		//解析到1个合法数据包
 		Log.i(TAG, "onReceive: " + cmd.toString());
 		cmdProcess(cmd);
 	}
@@ -99,7 +101,7 @@ public class ConsoleActivity extends SerialPortActivity implements ParseRcvData.
 	}
 
 	private void cmdProcess(UartReaderData cmd) {
-		Log.i(TAG, "cmd: " + String.format("%04x", cmd.getCmd()));
+		Log.i(TAG, "cmd: " + String.format("%04x", cmd.getCmd()) + ",reader addr:" + cmd.getAddr() + ",ctrl addr:" + cmd.getCtrAddr());
 		switch (cmd.getCmd()) {
 			case 0x4100:
 			{
@@ -108,7 +110,14 @@ public class ConsoleActivity extends SerialPortActivity implements ParseRcvData.
 			break;
 			case 0x4200:
 			{
+				Log.i(TAG, "len:" + cmd.getLen());
+				if (16 == cmd.getLen()) {
+					byte[] bytes = cmd.getByteBuffer();
+					Log.i(TAG, "random num:" + DataConversion.toHexString(bytes, bytes.length, true));
 
+				}
+				//
+				//ack：密钥标识（1Byte)+随机数长度（1Byte）+随机数RS（LByte）+随机数RC'（LByte）
 			}
 			break;
 			case 0x4201:

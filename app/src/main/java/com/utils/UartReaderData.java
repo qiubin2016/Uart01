@@ -5,7 +5,9 @@ import android.util.Log;
 import java.nio.ByteBuffer;
 
 
-public class UartReaderData extends Object{
+public class UartReaderData /*extends Object*/{
+    private static final String TAG = "UartReaderData";
+
     public static final int   MAX_LEN = 10000;
     public static final int   MIN_STEP = 8;
     public static final int   CHECK_SUM_OK = 0;
@@ -13,7 +15,7 @@ public class UartReaderData extends Object{
     public static final byte EOI = (byte)0xF3;
     public static final byte GROUP_BYTE = (byte)0x01;    //调试 固定
     public static final byte ADDR_BYTE = (byte)0x01;    //调试 固定
-    public static final byte DEVICE_TYPE = (byte)0x21;  //电梯设备类型
+    public static final byte DEVICE_TYPE = (byte)0x24;  //电梯读头设备类型
     public static final byte BROADCAST_PARAM = (byte)0x00;  //广播地址
     public static final byte MODIFY_BYTE_TX = (byte)0x7F;
     public static final byte MODIFY_BYTE_RX = (byte)0x80;
@@ -21,6 +23,9 @@ public class UartReaderData extends Object{
 
     private byte mGroup;
     private byte mAddr;
+    private int  mCtrAddr;
+    private byte mCtrAddrH;    //控制器机号高字节，即设备所属组号的高4位
+    private byte mCtrlAddrL;   //控制器机号低字节，即设备地址字节
     private byte mSnr;
     private byte mCmdh;
     private byte mCmdl;
@@ -51,6 +56,30 @@ public class UartReaderData extends Object{
 
     public void setAddr(byte addr) {
         mAddr = addr;
+    }
+
+    public int getCtrAddr() {
+        return mCtrAddr;
+    }
+
+    public void setCtrAddr(int mCtrAddr) {
+        this.mCtrAddr = mCtrAddr;
+    }
+
+    public byte getCtrAddrH() {
+        return mCtrAddrH;
+    }
+
+    public void setCtrAddrH(byte mCtrAddrH) {
+        this.mCtrAddrH = mCtrAddrH;
+    }
+
+    public byte getCtrlAddrL() {
+        return mCtrlAddrL;
+    }
+
+    public void setCtrlAddrL(byte mCtrlAddrL) {
+        this.mCtrlAddrL = mCtrlAddrL;
     }
 
     public byte getSnr() {
@@ -135,6 +164,17 @@ public class UartReaderData extends Object{
 
     public void setReady(boolean ready) {
         mReady = ready;
+    }
+
+    public byte[] getByteBuffer() {
+        mByteBuf.flip();    //写完数据，需要开始读的时候，将postion复位到0，并将limit设为当前postion
+        int len = mByteBuf.limit() - mByteBuf.position();
+        Log.i(TAG, "len:" + len);
+        byte[] bytes = new byte[len];
+        mByteBuf.get(bytes);
+        mByteBuf.clear();
+
+        return bytes;
     }
 
     @Override

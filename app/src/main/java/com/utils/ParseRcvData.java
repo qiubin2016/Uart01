@@ -1,6 +1,7 @@
 package com.utils;
 
 
+import android.util.Log;
 
 public class ParseRcvData<T>{
     private static final String TAG = "ParseRcvData";
@@ -17,12 +18,13 @@ public class ParseRcvData<T>{
     }
 
     public void put(final byte[] buffer, final int size) {
-        for (byte byteData : buffer) {  //循环处理
-            byteProcess(byteData);
+        for (int i = 0; i < size; i++) {  //循环处理
+            byteProcess(buffer[i]);
         }
     }
 
     private void byteProcess(byte byteData) {
+//        Log.i(TAG, String.format("byte:%02x", byteData));
         if (mUartReaderData.SOI == byteData) {  //起始字节
             //初始化参数
             mUartReaderData.setStep(1);
@@ -69,26 +71,25 @@ public class ParseRcvData<T>{
                     }
                 } else {
                     switch (mUartReaderData.getStep()) {
-                        case 1:  //设备组号:
+                        case 1:  //设备组号(读头号):
                         {
-                            if ((mUartReaderData.BROADCAST_PARAM == byteData) || (mUartReaderData.GROUP_BYTE == byteData)) {
+                            mUartReaderData.setCtrAddrH((byte)((byteData & 0xF0) >> 4));
+                            mUartReaderData.setAddr((byte)(byteData & 0x0F));  //保存
+                            Log.i(TAG, "ctrl addr h:" + mUartReaderData.getCtrAddrH() + ",addr:" + mUartReaderData.getAddr());
+                            if ((mUartReaderData.BROADCAST_PARAM == byteData) || (mUartReaderData.ADDR_BYTE == mUartReaderData.getAddr())) {
                                 mUartReaderData.increaseStep();
                             } else {  //不合法，丢弃数据，重新开始接收
                                 mUartReaderData.setStep(0);
-                                mErrorCode.setErrorCode(ErrorCode.ERROR_CODE_GROUP_UNMATCHED);
-                                mCmdCallback.onError(mErrorCode);
+//                                mErrorCode.setErrorCode(ErrorCode.ERROR_CODE_GROUP_UNMATCHED);
+//                                mCmdCallback.onError(mErrorCode);
                             }
                             break;
                         }
-                        case 2:  //设备地址
+                        case 2:  //设备地址(控制器机号)
                         {
-                            if ((mUartReaderData.BROADCAST_PARAM == byteData) || (mUartReaderData.ADDR_BYTE == byteData)) {
-                                mUartReaderData.increaseStep();
-                            } else {  //不合法，丢弃数据，重新开始接收
-                                mUartReaderData.setStep(0);
-                                mErrorCode.setErrorCode(ErrorCode.ERROR_CODE_ADDR_UNMATCHED);
-                                mCmdCallback.onError(mErrorCode);
-                            }
+                            mUartReaderData.setCtrlAddrL(byteData);
+                            mUartReaderData.setCtrAddr(mUartReaderData.getCtrAddrH() * 256 + byteData);
+                            mUartReaderData.increaseStep();
                             break;
                         }
                         case 3:  //设备类型
