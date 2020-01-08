@@ -14,12 +14,15 @@ public class UartReaderData /*extends Object*/{
     public static final byte SOI = (byte)0xF2;
     public static final byte EOI = (byte)0xF3;
     public static final byte GROUP_BYTE = (byte)0x01;    //调试 固定
-    public static final byte ADDR_BYTE = (byte)0x01;    //调试 固定
+    public static final byte ADDR_BYTE = (byte)0x03;    //读头号 调试 固定
     public static final byte DEVICE_TYPE = (byte)0x24;  //电梯读头设备类型
     public static final byte BROADCAST_PARAM = (byte)0x00;  //广播地址
     public static final byte MODIFY_BYTE_TX = (byte)0x7F;
     public static final byte MODIFY_BYTE_RX = (byte)0x80;
     public static final byte MODIFY_BYTE = (byte)0xF0;
+
+    public static final byte STATUS_OK = (byte)0;
+
 
     private byte mGroup;
     private byte mAddr;
@@ -168,7 +171,8 @@ public class UartReaderData /*extends Object*/{
 
     public byte[] getByteBuffer() {
         mByteBuf.flip();    //写完数据，需要开始读的时候，将postion复位到0，并将limit设为当前postion
-        int len = mByteBuf.limit() - mByteBuf.position();
+//        int len = mByteBuf.limit() - mByteBuf.position();  //ByteBuffer的长度包含了校验字节
+        int len = mLen;
         Log.i(TAG, "len:" + len);
         byte[] bytes = new byte[len];
         mByteBuf.get(bytes);
@@ -180,12 +184,16 @@ public class UartReaderData /*extends Object*/{
     @Override
     public String toString() {
         return "UartReaderData{" +
-                "mGroup=" + String.format("%02x", mGroup) +
-                ", mAddr=" + String.format("%02x", mAddr) +
-                ", mSnr=" + String.format("%02x", mSnr) +
-                ", mCmdh=" + String.format("%02x", mCmdh) +
-                ", mCmdl=" + String.format("%02x", mCmdl) +
-                ", mCheckSum=" + String.format("%02x", mCheckSum) +
+                "mGroup=" + mGroup +
+                ", mAddr=" + mAddr +
+                ", mCtrAddr=" + mCtrAddr +
+                ", mCtrAddrH=" + mCtrAddrH +
+                ", mCtrlAddrL=" + mCtrlAddrL +
+                ", mSnr=" + mSnr +
+                ", mCmdh=" + mCmdh +
+                ", mCmdl=" + mCmdl +
+                ", mCmd=" + mCmd +
+                ", mCheckSum=" + mCheckSum +
                 ", mLen=" + mLen +
                 ", mStep=" + mStep +
                 ", mModify=" + mModify +

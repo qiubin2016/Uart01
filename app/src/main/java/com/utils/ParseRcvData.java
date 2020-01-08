@@ -3,6 +3,9 @@ package com.utils;
 
 import android.util.Log;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 public class ParseRcvData<T>{
     private static final String TAG = "ParseRcvData";
 
@@ -119,7 +122,8 @@ public class ParseRcvData<T>{
                         {
                             mUartReaderData.setCmdl(byteData);
                             mUartReaderData.increaseStep();
-                            mUartReaderData.setCmd(mUartReaderData.getCmdh() << 8 + mUartReaderData.getCmdl());
+                            //需要注意优先级
+                            mUartReaderData.setCmd((mUartReaderData.getCmdh() << 8) + mUartReaderData.getCmdl());
                             break;
                         }
                         default:
@@ -128,6 +132,61 @@ public class ParseRcvData<T>{
                 }
             }
         }
+    }
+
+    public void write(UartReaderData cmd, byte status, byte[] output, OutputStream outputStream) {
+        byte[] bytes;
+        int num = 0;
+        byte tmpByte, checkSum = 0;
+
+        bytes = new byte[100];
+        bytes[num++] = cmd.SOI;    //起始字节
+        tmpByte = (byte)(cmd.getAddr() | (byte) (cmd.getCtrAddrH() << 4));    //读头号
+        Log.i(TAG, String.format("reader addr:%02x", tmpByte));
+        checkSum ^= tmpByte;    //计算校验
+        num = checkModify(bytes, num, tmpByte, cmd);
+        tmpByte = cmd.getCtrlAddrL();    //控制器机号
+        Log.i(TAG, String.format("ctrl addr:%02x", tmpByte));
+        checkSum ^= tmpByte;    //计算校验
+        num = checkModify(bytes, num, tmpByte, cmd);
+        bytes[num++] = mUartReaderData.DEVICE_TYPE;    //设备类型
+        checkSum ^= mUartReaderData.DEVICE_TYPE;    //计算校验
+        tmpByte = cmd.getSnr();    //流水号
+        checkSum ^= tmpByte;    //计算校验
+        num = checkModify(bytes, num, tmpByte, cmd);
+        bytes[num++] = 0x00;   //状态高字节
+        bytes[num++] = status;   //状态低字节
+        try {
+            if (null != output) {
+                //当output为null，output.length会崩溃
+                for (int i = 0; i < output.length; i++) {
+                    checkSum ^= output[i];    //计算校验
+                    num = checkModify(bytes, num, output[i], cmd);
+                }
+            }
+            num = checkModify(bytes, num, checkSum, cmd);  //校验字节
+            bytes[num++] = cmd.EOI;     //结束字节
+            Log.i(TAG, "output:" + DataConversion.toHexString(bytes, num, true));  //打印
+            outputStream.write(bytes, 0, num);    //往串口写数据
+        } catch (IOException e) {
+            e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    }
+
+    private int checkModify(byte[] bytes, int num, byte tmpByte, UartReaderData cmd) {
+//        Log.i(TAG, String.format("tmpByte:%02x, modify:%02x", tmpByte, cmd.MODIFY_BYTE));
+//        Log.i(TAG, "tmpByte:" + tmpByte + ",modify:" + cmd.MODIFY_BYTE);
+        if ((char)tmpByte >= (char)cmd.MODIFY_BYTE) {
+            Log.i(TAG, ">= 0xF0");
+            bytes[num++] = cmd.MODIFY_BYTE;
+            bytes[num++] = (byte)(tmpByte & cmd.MODIFY_BYTE_TX);
+        } else {
+//            Log.i(TAG, "< 0xF0");
+            bytes[num++] = tmpByte;
+        }
+        return num;
     }
 
     //接口  解析到合法数据包后回调onReceive()；解析错误回调onError()

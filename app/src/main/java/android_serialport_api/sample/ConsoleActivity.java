@@ -25,13 +25,17 @@ import android.widget.EditText;
 import android.widget.TextView;
 import android.widget.TextView.OnEditorActionListener;
 
+import com.itlong.java.EnDecrypt;
 import com.utils.DataConversion;
 import com.utils.ErrorCode;
 import com.utils.ParseRcvData;
+import com.utils.RandomNumber;
 import com.utils.UartReaderData;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.Random;
 
 public class ConsoleActivity extends SerialPortActivity implements ParseRcvData.CmdCallback<UartReaderData>{
 	private static final String TAG = "ConsoleActivity";
@@ -69,13 +73,25 @@ public class ConsoleActivity extends SerialPortActivity implements ParseRcvData.
 
 		//新建串口数据解析类，设置回调接口
 		mParseRcvData = new ParseRcvData(this);
+		getRandomValue(16);
+		byte[] bytesArr = new byte[16];
+		RandomNumber.getRandomBytes(bytesArr);
+		Log.i(TAG, DataConversion.toHexString(bytesArr, bytesArr.length, true));
+		byte[] bytes = null;
+		try {
+			Log.i(TAG, "len:" + bytes.length);
+		} catch (Exception e) {
+			Log.i(TAG, "exception...");
+			e.printStackTrace();
+		}
+
 	}
 
 	@Override
 	protected void onDataReceived(final byte[] buffer, final int size) {
 		//串口收到数据的回调函数
 //		Log.i(TAG, "len: " + size + ",buffer: " + DataConversion.toHexString(buffer, size, true));
-
+        mParseRcvData.put(buffer, size);  //串口接收的数据，送给解析类，解析成功回调onReceive()，失败回调onError()
 		runOnUiThread(new Runnable() {
 			public void run() {
 				if (mReception != null) {
@@ -83,10 +99,7 @@ public class ConsoleActivity extends SerialPortActivity implements ParseRcvData.
 				}
 			}
 		});
-
-		mParseRcvData.put(buffer, size);  //串口接收的数据，送给解析类，解析成功回调onReceive()，失败回调onError()
 	}
-
 
 	@Override
 	public void onReceive(UartReaderData cmd) {
@@ -101,32 +114,88 @@ public class ConsoleActivity extends SerialPortActivity implements ParseRcvData.
 	}
 
 	private void cmdProcess(UartReaderData cmd) {
+		byte[] bytesAck;
+		byte[] bytes = cmd.getByteBuffer();  //获取协议中的数据内容
 		Log.i(TAG, "cmd: " + String.format("%04x", cmd.getCmd()) + ",reader addr:" + cmd.getAddr() + ",ctrl addr:" + cmd.getCtrAddr());
 		switch (cmd.getCmd()) {
 			case 0x4100:
 			{
-
+				bytesAck = new byte[1];
+				bytesAck[0] = 0x00;
+				mParseRcvData.write(cmd, cmd.STATUS_OK, bytesAck, mOutputStream);  //按照协议格式封装数据包并写入串口
 			}
 			break;
 			case 0x4200:
 			{
-				Log.i(TAG, "len:" + cmd.getLen());
-				if (16 == cmd.getLen()) {
-					byte[] bytes = cmd.getByteBuffer();
-					Log.i(TAG, "random num:" + DataConversion.toHexString(bytes, bytes.length, true));
-
-				}
-				//
+				//req：随机数RC（LByte）
 				//ack：密钥标识（1Byte)+随机数长度（1Byte）+随机数RS（LByte）+随机数RC'（LByte）
+				Log.i(TAG, "len:" + cmd.getLen());
+				if (RandomNumber.CONST_NUM == cmd.getLen()) {
+					Log.i(TAG, "random num:" + DataConversion.toHexString(bytes, bytes.length, true) + ",len:" + bytes.length);
+                    byte[] encryptBytes = new byte[RandomNumber.CONST_NUM];
+//					Log.i(TAG, "before:" + DataConversion.toHexString(encryptBytes, encryptBytes.length, true));
+                    if (RandomNumber.encryptRandomBytes(bytes, encryptBytes)) {  //读头对随机数加密
+                        Log.i(TAG, "after:" + DataConversion.toHexString(encryptBytes, encryptBytes.length, true));
+						bytesAck = new byte[34];
+						int i = 0;
+						bytesAck[i++] = 0x10;
+						bytesAck[i++] = 0x10;
+						//固定random num
+						byte[] bytesRandom = new byte[RandomNumber.CONST_NUM];
+						RandomNumber.getRandomBytes(bytesRandom);
+						Log.i(TAG, "getRandomBytes:" + DataConversion.toHexString(bytesRandom, bytesRandom.length, true));
+						System.arraycopy(bytesRandom, 0, bytesAck, i, bytesRandom.length);
+						i += bytesRandom.length;
+						System.arraycopy(encryptBytes, 0, bytesAck, i, encryptBytes.length);  //encryptBytes-->bytesAck
+                        mParseRcvData.write(cmd, cmd.STATUS_OK, bytesAck, mOutputStream);  //按照协议格式封装数据包并写入串口
+                    } else {
+                        Log.i(TAG, "encypt null");
+                    }
+				}
 			}
 			break;
 			case 0x4201:
 			{
-
+				//req：密钥标识（1Byte)+随机数长度（1Byte）+随机数RS'（LByte）
+				//ack：无
+				if (bytes.length > 2) {
+					Log.i(TAG, "4201");
+					if (RandomNumber.CONST_NUM == bytes[1]) {
+						byte[] verify = new byte[RandomNumber.CONST_NUM];
+						System.arraycopy(bytes, 2, verify, 0, RandomNumber.CONST_NUM);
+						Log.i(TAG, "verify:" + DataConversion.toHexString(verify, verify.length, true));
+						if (RandomNumber.verifyRandonBytes(verify)) {  //随机数加密校验通过
+							Log.i(TAG, "4201--1");
+							mParseRcvData.write(cmd, cmd.STATUS_OK, null, mOutputStream);  //按照协议格式封装数据包并写入串口
+						}
+					}
+				}
 			}
 			break;
 			default:
 				break;
 		}
+	}
+
+	public static String getRandomValue(int numSize) {
+		String str = "";
+		for (int i = 0; i < numSize; i++) {
+			char temp = 0;
+			int key = (int) (Math.random() * 2);
+			switch (key) {
+				case 0:
+					temp = (char) (Math.random() * 10 + '0');//产生随机数字
+					break;
+				case 1:
+					temp = (char) (Math.random() * 6 + 'a');//产生a-f
+					break;
+				default:
+					break;
+			}
+			Log.i(TAG, "temp:" + temp);
+			str = str + temp;
+		}
+		Log.i(TAG, "str:" + str);
+		return str;
 	}
 }
